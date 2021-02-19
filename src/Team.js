@@ -1,9 +1,17 @@
+import { faCode } from '@fortawesome/free-solid-svg-icons';
+import react from 'react';
 import React,{useEffect, useState, useCallback} from 'react';
+import { useMemo,useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import actions from './store/actions';
+import {PropTypes} from 'prop-types';
+import withSort from './withSort';
+
+
+const UserContainerSort = withSort(UserContainer,'name');
 
 const AddUserButton = React.memo(function({clickHandle}) {
-
-
     function clickCallback() {
         clickHandle({imageUrl : "https://www.pavilionweb.com/wp-content/uploads/2017/03/man-300x300.png"});
     }
@@ -16,6 +24,9 @@ const AddUserButton = React.memo(function({clickHandle}) {
         </div>
     );
 });
+AddUserButton.propTypes = {
+    clickHandle: PropTypes.func,
+}
 
 const UserImage = React.memo(function({src,userName}) {
     return (
@@ -24,8 +35,14 @@ const UserImage = React.memo(function({src,userName}) {
         </div>
     );
 })
+UserImage.propTypes = {
+    src: PropTypes.string,
+    userName: PropTypes.string,
+}
 
 const UserCard = React.memo(function({user,editClick}) {
+
+    //console.log("Called again");
 
     function hadnleClickCallback() {
         editClick(user);
@@ -61,6 +78,24 @@ const UserCard = React.memo(function({user,editClick}) {
         </section>
     );
 });
+UserCard.propTypes = {
+    user: PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        imageUrl: PropTypes.string,
+        name: PropTypes.string,
+        designation: PropTypes.string,
+        location: PropTypes.string,
+        phone: PropTypes.string,
+        tasks: PropTypes.arrayOf(PropTypes.number),
+        email: function(props,propName) {
+            if(typeof props[propName] != "string" || !props[propName].includes('@'))
+            {
+                return new Error("Invalid Email address");
+            }
+        }
+    }),
+    editClick: PropTypes.func,
+};
 
 function UserImageurl({imageUrl,handleImageChange,userName}) {
 
@@ -83,6 +118,11 @@ function UserImageurl({imageUrl,handleImageChange,userName}) {
         </div> 
     )
 }
+UserImageurl.propTypes = {
+    imageUrl: PropTypes.string,
+    handleImageChange: PropTypes.func,
+}
+
 
 function UserName({name,handleNameChange}) {
     const [userName,setUserName] = useState(name);
@@ -100,6 +140,10 @@ function UserName({name,handleNameChange}) {
         </div>
     )
 }
+UserName.propTypes = {
+    name: PropTypes.string,
+    handleNameChange: PropTypes.func,
+}
 
 function UserDesignation({designation,handleDesignationChange}) {
     const [userDesignation,setUserDesignation] = useState(designation);
@@ -116,8 +160,14 @@ function UserDesignation({designation,handleDesignationChange}) {
         </div>
     )
 }
+UserDesignation.propTypes = {
+    designation: PropTypes.string,
+    handleDesignationChange: PropTypes.func,
+}
 
 function UserLocation({location,handleLocationChange}) {
+
+    const cities = useSelector((state) => state.cities);
     const [userLocation,setUserLocation] = useState(location);
 
     function handleChange(e) {
@@ -126,11 +176,20 @@ function UserLocation({location,handleLocationChange}) {
     }
 
     return (
+
         <div className="userLocationOverlay">
-            <label htmlFor="userLocationInput"><i className="fa fa-map-marker" aria-hidden="true"></i> Location :- </label>
-            <input value={userLocation} onChange={handleChange} type="text" id="userLocationInput" name="userLocationInput" />  
+            <label htmlFor="userLocationInput"><i className="fa fa-user-circle-o" aria-hidden="true"></i> Location :- </label>
+            <select id="userLocationInput" value={userLocation} onChange={handleChange}>
+                {cities.map(function(city) {
+                    return (<option value={city["name"]} key={city["objectId"]}>{city["name"]}</option>);
+                })}
+            </select>  
         </div>
     )
+}
+UserLocation.propTypes = {
+    location: PropTypes.string,
+    handleLocationChange: PropTypes.func,
 }
 
 function UserEmail({email,handleEmailChange}) {
@@ -149,6 +208,15 @@ function UserEmail({email,handleEmailChange}) {
         </div>
     )
 }
+UserEmail.propTypes = {
+    email: function(props,propName) {
+        if(typeof props[propName] != "string" || !props[propName].includes('@'))
+        {
+            return new Error("Invalid Email address");
+        }
+    },
+    handleEmailChange: PropTypes.func,
+}
 
 function UserPhone({phone,handlePhoneChange}) {
 
@@ -166,8 +234,23 @@ function UserPhone({phone,handlePhoneChange}) {
         </div>
     )
 }
+UserPhone.propTypes = {
+    phone: PropTypes.string,
+    handlePhoneChange: PropTypes.func,
+}
+
 
 function UserOverlay({user,handleClose,handleSave,handleDelete}) {
+
+    const elem = useRef(document.createElement('div'));
+    useEffect(function() {
+        elem.current.classList.add('userOverlayContainer');
+        document.body.appendChild(elem.current);
+
+        return function() {
+            document.body.removeChild(elem.current);
+        }
+    },[]);
 
     let userImageurl=user.imageUrl || "https://www.pavilionweb.com/wp-content/uploads/2017/03/man-300x300.png"
     let userName = user.name || "";
@@ -231,8 +314,7 @@ function UserOverlay({user,handleClose,handleSave,handleDelete}) {
         handleClose();
     }
 
-    return(
-        <div className="userOverlayContainer">
+    return ReactDOM.createPortal(
             <div className="userOverlay">
                 <div className="closeButton" onClick={closeCallback}>
                 X
@@ -252,108 +334,103 @@ function UserOverlay({user,handleClose,handleSave,handleDelete}) {
                         <i className="fa fa-times" aria-hidden="true"></i> DELETE USER
                     </div>
                 </div>
-            </div>
-        </div>
+            </div>,
+            elem.current
     );
 }
+UserOverlay.propTypes = {
+    user: PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        imageUrl: PropTypes.string,
+        name: PropTypes.string,
+        designation: PropTypes.string,
+        location: PropTypes.string,
+        phone: PropTypes.string,
+        tasks: PropTypes.arrayOf(PropTypes.number),
+        email: function(props,propName) {
+            if(typeof props[propName] != "string" || !props[propName].includes('@'))
+            {
+                return new Error("Invalid Email address");
+            }
+        }
+    }),
+    handleClose: PropTypes.func,
+    handleDelete: PropTypes.func,
+    handleSave: PropTypes.func,
+};
 
 function UserContainer({users}) 
 {
+    const dispatch = useDispatch();
+
     const [overlay,setOverlay] = useState(null);
 
     const editClick = useCallback((user) => setOverlay(user),[]);
 
     function handleClose() {
-        setOverlay(null);
+        //for animation
+        let elem = document.querySelector('.userOverlay');
+        elem.classList.add('closeOverlay');
+        setTimeout(() => setOverlay(null),500);
     }
 
     function handleSave(newUser) {
         if(newUser.id == -1) {
             newUser.id = users[users.length-1].id+1;
             newUser.tasks = [];
-            users.push(newUser);
+            dispatch(actions.addUser(newUser));
         }
         else {
-            let ind = users.findIndex((user) => user.id == newUser.id);
-            users[ind] = newUser;
+            dispatch(actions.updateUser(newUser.id,newUser))
         }
-        commitUsers(users);
-        setOverlay(null);
+        //for animation
+        let elem = document.querySelector('.userOverlay');
+        elem.classList.add('closeOverlay');
+        setTimeout(() => setOverlay(null),500);
     }
 
     function handleDelete(id) {
-        let ind = users.findIndex((user) => user.id == id);
-        users.splice(ind,1);
-        commitUsers(users);
+        dispatch(actions.removeUser(id));
         setOverlay(null);
     }
 
-    let element;
-    if(overlay == null) {
-        element = <>
-                    <div id="flexContainer">
-                        {users.map((user) => <UserCard user={user} editClick={editClick} key={user.id}/>)}
-                    </div>
-                    <AddUserButton clickHandle={editClick}/>
-                  </>;
-    }
-
-    else {
-        element = <>
-                    <UserOverlay user={overlay} handleClose={handleClose} handleSave={handleSave} handleDelete={handleDelete}/>
-                    <div id="flexContainer">
-                        {users.map((user) => <UserCard user={user} editClick={editClick} key={user.id}/>)}
-                    </div>
-                    <AddUserButton clickHandle={editClick}/>
-                  </>;
-    }
-    return element;
+    const modal = (overlay==null) ? null : <UserOverlay user={overlay} handleClose={handleClose} handleSave={handleSave} handleDelete={handleDelete}/>;
+    return (
+        <>
+            <div id="flexContainer">
+                {users.map((user) => <UserCard user={user} editClick={editClick} key={user.id}/>)}
+            </div>
+            <AddUserButton clickHandle={editClick}/>
+            {modal}
+        </>
+    )
 }
 
 function Team(props) {
+    
+    const [sort,setSort] = useState(1);
+    const users = useSelector(state => state.users);
+    function sortChange() {
+        if(sort == 1) {
+            setSort(2);
+        }
+        else {
+            setSort(1);
+        }
+    }
 
-    let users = fetchUsers();
-
+    const elem = <div className="addUserContainer sortButton" onClick={sortChange}>
+                    <div className="addUser">
+                        <i className={"fa " + ((sort == 1) ? "fa-sort-alpha-desc":"fa-sort-alpha-asc")} aria-hidden="true"></i>
+                    </div>
+                 </div>;
+    
     return (
         <section className="board">
-            <UserContainer users={users}/>
+            <UserContainerSort users={users} type={sort}/>
+            {elem}
         </section>
     );
-}
-
-function fetchUsers() {
-    let users = JSON.parse(localStorage.getItem('users')) || [];
-    if(users.length == 0)
-    {
-        let newUser1 = {};
-        newUser1.id = 0;
-        newUser1.imageUrl = "https://www.pavilionweb.com/wp-content/uploads/2017/03/man-300x300.png";
-        newUser1.name = "Dhruv Patel";
-        newUser1.designation = "project head";
-        newUser1.location = "Mumbai, India";
-        newUser1.email = "dhruv.patel@comapnay.com";
-        newUser1.phone = "917878345672";
-        newUser1.tasks = [0];
-        users.push(newUser1);
-
-        let newUser2 = {};
-        newUser2.id = 1;
-        newUser2.imageUrl = "assets/john-paul.jpeg";
-        newUser2.name = "John Paul";
-        newUser2.designation = "project manager";
-        newUser2.location = "New York, USA";
-        newUser2.email = "john.paul@comapnay.com";
-        newUser2.phone = "19998645408";
-        newUser2.tasks = [1];
-        users.push(newUser2);
-
-        commitUsers(users);
-    }
-    return users;
-}
-
-function commitUsers(users) {
-    localStorage.setItem('users',JSON.stringify(users));
 }
 
 export default Team;
