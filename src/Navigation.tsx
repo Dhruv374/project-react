@@ -1,11 +1,10 @@
 import React, {useEffect, useState} from 'react';
 import ReactDOM from 'react-dom';
 import { NavLink,Link } from 'react-router-dom';
-import {PropTypes} from 'prop-types';
 
 function Navbar() {
 
-    let [task,setTask] = useState(true);
+    let [task,setTask] = useState<boolean>(true);
 
     return (
         <div className="topnav">

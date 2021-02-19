@@ -1,32 +1,35 @@
-const addUser = user => {
+import {userObject} from '../Team'
+import {taskObject} from '../Tasks'
+
+const addUser = (user : userObject) => {
     return {
         type: "ADD_USER",
         payload: user,
     }
 }
 
-const removeUser = id => {
+const removeUser = (id : number) => {
     return {
         type: "REMOVE_USER",
         payload: id,
     }
 }
 
-const addTask = task => {
+const addTask = (task : taskObject) => {
     return {
         type: "ADD_TASK",
         payload: task,
     }   
 }
 
-const removeTask = taskId => {
+const removeTask = (taskId : number) => {
     return {
         type: "REMOVE_TASK",
         payload: taskId,
     }
 }
 
-const updateUser = (id,user) => {
+const updateUser = (id : number,user : userObject) => {
     return {
         type: "UPDATE_USER",
         payload: {
@@ -36,7 +39,7 @@ const updateUser = (id,user) => {
     }
 }
 
-const updateTask = (taskId,task) => {
+const updateTask = (taskId : number,task : taskObject) => {
     return {
         type: "UPDATE_TASK",
         payload: {

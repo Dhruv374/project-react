@@ -4,13 +4,28 @@ import Tasks from './Tasks';
 import Team from './Team';
 import { Provider } from 'react-redux';
 import { createStore } from 'redux';
-import rootReducer from './store/reducers.js'
+import rootReducer from './store/reducers'
 import { useEffect } from 'react';
+import {userObject} from './Team';
+import {taskObject} from './Tasks';
 
-const state = {
-  users: JSON.parse(localStorage.getItem('users')),
-  tasks: JSON.parse(localStorage.getItem('tasks')),
-  cities: {},
+interface cityType {
+  "objectId": string,
+  "name": string,
+  "createdAt": string,
+  "updatedAt": string,
+}
+
+interface stateType {
+  users : userObject[],
+  tasks : taskObject[],
+  cities : string[],
+}
+
+const state: stateType = {
+  users: JSON.parse(localStorage.getItem('users') as string),
+  tasks: JSON.parse(localStorage.getItem('tasks') as string),
+  cities: [],
 }
 
 const store = createStore(rootReducer,state);
@@ -37,8 +52,11 @@ function App() {
               }
             }
           );
-              const data = await response.json();
-              state['cities'] = data["results"];
+              const data: {"results" : cityType[]} = await response.json();
+              const cityObjectsArray: cityType[] = data["results"];
+              state['cities'] = cityObjectsArray.map(function(city: cityType): string {
+                return city["name"];
+              });
           }
           catch(err) {
               state['cities'] = ["Mumbai" , "Delhi" , "Banglore" , "Chennai" , "Hyderabad" , "Ahmedabad"];
@@ -61,8 +79,6 @@ function App() {
   );
 }
 
-
-store.subscribe(() => console.log("Hello"));
 store.subscribe(() => {
   let state = store.getState();
   let users = state.users;

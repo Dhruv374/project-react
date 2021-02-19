@@ -5,15 +5,59 @@ import { useMemo,useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import actions from './store/actions';
-import {PropTypes} from 'prop-types';
 import withSort from './withSort';
+import { number } from 'prop-types';
+import { Interface } from 'readline';
+import { StringifyOptions } from 'querystring';
+import {taskObject} from './Tasks';
 
+//type definitions start here
+export interface userObject {
+    id : number,
+    imageUrl : string,
+    name : string,
+    designation : string,
+    location : string,
+    email : string,
+    phone : number,
+    tasks : number[],
+}
 
-const UserContainerSort = withSort(UserContainer,'name');
+export class userObject implements userObject {}
 
-const AddUserButton = React.memo(function({clickHandle}) {
+type usersArray = userObject[];
+interface UserContainerProps {
+    users: usersArray,
+}
+
+interface UserOverlayProps {
+    user: userObject,
+    handleClose() : void,
+    handleSave(user : userObject) : void,
+    handleDelete(id : number) : void,
+}
+
+interface userImageurlProps {
+    imageUrl : string,
+    handleImageChange(url : string) : void,
+    userName : string,
+}
+
+interface stateType {
+    users : userObject[],
+    tasks : taskObject[],
+    cities : string[],
+}
+
+//type definitions end here
+
+const UserContainerSort = withSort((UserContainer as unknown) as typeof React.Component,'name');
+
+const AddUserButton = React.memo(function({clickHandle} : {clickHandle : (user:userObject) => void}) {
     function clickCallback() {
-        clickHandle({imageUrl : "https://www.pavilionweb.com/wp-content/uploads/2017/03/man-300x300.png"});
+        let newUser : userObject = new userObject();
+        newUser.imageUrl = "https://www.pavilionweb.com/wp-content/uploads/2017/03/man-300x300.png";
+        clickHandle(newUser);
     }
 
     return( 
@@ -24,23 +68,16 @@ const AddUserButton = React.memo(function({clickHandle}) {
         </div>
     );
 });
-AddUserButton.propTypes = {
-    clickHandle: PropTypes.func,
-}
 
-const UserImage = React.memo(function({src,userName}) {
+const UserImage = React.memo(function({src ,userName} : {src: string , userName: string}) {
     return (
         <div className="userImage">
             <img src = {src} alt={userName} height="100px" width="100px" />
         </div>
     );
 })
-UserImage.propTypes = {
-    src: PropTypes.string,
-    userName: PropTypes.string,
-}
 
-const UserCard = React.memo(function({user,editClick}) {
+const UserCard = React.memo(function({user,editClick} : {user: userObject , editClick: (user : userObject) => void}) {
 
     //console.log("Called again");
 
@@ -78,30 +115,12 @@ const UserCard = React.memo(function({user,editClick}) {
         </section>
     );
 });
-UserCard.propTypes = {
-    user: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        imageUrl: PropTypes.string,
-        name: PropTypes.string,
-        designation: PropTypes.string,
-        location: PropTypes.string,
-        phone: PropTypes.string,
-        tasks: PropTypes.arrayOf(PropTypes.number),
-        email: function(props,propName) {
-            if(typeof props[propName] != "string" || !props[propName].includes('@'))
-            {
-                return new Error("Invalid Email address");
-            }
-        }
-    }),
-    editClick: PropTypes.func,
-};
 
-function UserImageurl({imageUrl,handleImageChange,userName}) {
+function UserImageurl({imageUrl,handleImageChange,userName} : userImageurlProps) {
 
-    const [userImageurl,setUserImageurl] = useState(imageUrl);
+    const [userImageurl,setUserImageurl] = useState<string>(imageUrl);
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
         let uploadUrl = e.target.value;
         uploadUrl = uploadUrl.slice(12);
         uploadUrl = 'assets/' + uploadUrl;
@@ -118,16 +137,11 @@ function UserImageurl({imageUrl,handleImageChange,userName}) {
         </div> 
     )
 }
-UserImageurl.propTypes = {
-    imageUrl: PropTypes.string,
-    handleImageChange: PropTypes.func,
-}
 
+function UserName({name,handleNameChange} : {name : string, handleNameChange : (name : string) => void}) {
+    const [userName,setUserName] = useState<string>(name);
 
-function UserName({name,handleNameChange}) {
-    const [userName,setUserName] = useState(name);
-
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
         setUserName(e.target.value);
         handleNameChange(e.target.value);
     }
@@ -140,15 +154,11 @@ function UserName({name,handleNameChange}) {
         </div>
     )
 }
-UserName.propTypes = {
-    name: PropTypes.string,
-    handleNameChange: PropTypes.func,
-}
 
-function UserDesignation({designation,handleDesignationChange}) {
-    const [userDesignation,setUserDesignation] = useState(designation);
+function UserDesignation({designation,handleDesignationChange} : {designation : string, handleDesignationChange : (designation : string) => void}) {
+    const [userDesignation,setUserDesignation] = useState<string>(designation);
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
         setUserDesignation(e.target.value);
         handleDesignationChange(e.target.value);
     }
@@ -160,17 +170,13 @@ function UserDesignation({designation,handleDesignationChange}) {
         </div>
     )
 }
-UserDesignation.propTypes = {
-    designation: PropTypes.string,
-    handleDesignationChange: PropTypes.func,
-}
 
-function UserLocation({location,handleLocationChange}) {
+function UserLocation({location,handleLocationChange} : {location : string, handleLocationChange : (location : string) => void}) {
 
-    const cities = useSelector((state) => state.cities);
-    const [userLocation,setUserLocation] = useState(location);
+    const cities = useSelector((state: stateType) => state.cities);
+    const [userLocation,setUserLocation] = useState<string>(location);
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLSelectElement>) {
         setUserLocation(e.target.value);
         handleLocationChange(e.target.value);
     }
@@ -180,23 +186,19 @@ function UserLocation({location,handleLocationChange}) {
         <div className="userLocationOverlay">
             <label htmlFor="userLocationInput"><i className="fa fa-user-circle-o" aria-hidden="true"></i> Location :- </label>
             <select id="userLocationInput" value={userLocation} onChange={handleChange}>
-                {cities.map(function(city) {
-                    return (<option value={city["name"]} key={city["objectId"]}>{city["name"]}</option>);
+                {cities.map(function(city : string) {
+                    return (<option value={city} key={city}>{city}</option>);
                 })}
             </select>  
         </div>
     )
 }
-UserLocation.propTypes = {
-    location: PropTypes.string,
-    handleLocationChange: PropTypes.func,
-}
 
-function UserEmail({email,handleEmailChange}) {
+function UserEmail({email,handleEmailChange} : {email : string, handleEmailChange : (email : string) => void}) {
 
-    const [userEmail,setUserEmail] = useState(email);
+    const [userEmail,setUserEmail] = useState<string>(email);
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
         setUserEmail(e.target.value);
         handleEmailChange(e.target.value);
     }
@@ -208,23 +210,14 @@ function UserEmail({email,handleEmailChange}) {
         </div>
     )
 }
-UserEmail.propTypes = {
-    email: function(props,propName) {
-        if(typeof props[propName] != "string" || !props[propName].includes('@'))
-        {
-            return new Error("Invalid Email address");
-        }
-    },
-    handleEmailChange: PropTypes.func,
-}
 
-function UserPhone({phone,handlePhoneChange}) {
+function UserPhone({phone,handlePhoneChange} : {phone : number, handlePhoneChange : (phone: number) => void}) {
 
-    const [userPhone,setUserPhone] = useState(phone);
+    const [userPhone,setUserPhone] = useState<number>(phone);
 
-    function handleChange(e) {
-        setUserPhone(e.target.value);
-        handlePhoneChange(e.target.value);
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
+        setUserPhone(+e.target.value);
+        handlePhoneChange(+e.target.value);
     }
 
     return (
@@ -234,13 +227,8 @@ function UserPhone({phone,handlePhoneChange}) {
         </div>
     )
 }
-UserPhone.propTypes = {
-    phone: PropTypes.string,
-    handlePhoneChange: PropTypes.func,
-}
 
-
-function UserOverlay({user,handleClose,handleSave,handleDelete}) {
+function UserOverlay({user,handleClose,handleSave,handleDelete} : UserOverlayProps) {
 
     const elem = useRef(document.createElement('div'));
     useEffect(function() {
@@ -259,32 +247,32 @@ function UserOverlay({user,handleClose,handleSave,handleDelete}) {
     let userEmail = user.email || "";
     let userPhone = user.phone || "";
     
-    function handleImageChange(imageUrl) {
+    function handleImageChange(imageUrl: string) {
         userImageurl = imageUrl;
     }
 
-    function handleNameChange(name) {
+    function handleNameChange(name: string) {
         userName = name;
     }
 
-    function handleDesignationChange(designation) {
+    function handleDesignationChange(designation: string) {
         userDesignation = designation;
     }
 
-    function handleLocationChange(location) {
+    function handleLocationChange(location: string) {
         userLocation = location;
     }
 
-    function handleEmailChange(email) {
+    function handleEmailChange(email: string) {
         userEmail = email;
     }
 
-    function handlePhoneChange(phone) {
+    function handlePhoneChange(phone: number) {
         userPhone = phone;
     }
 
     function saveCallBack() {
-        let newUser = {};
+        let newUser:userObject = new userObject();
         if(isNaN(user.id)) {
             newUser.id = -1;
         }
@@ -297,7 +285,7 @@ function UserOverlay({user,handleClose,handleSave,handleDelete}) {
         newUser.designation = userDesignation;
         newUser.location = userLocation;
         newUser.email = userEmail;
-        newUser.phone = userPhone;
+        newUser.phone = +userPhone;
         handleSave(newUser);
     }
 
@@ -338,43 +326,26 @@ function UserOverlay({user,handleClose,handleSave,handleDelete}) {
             elem.current
     );
 }
-UserOverlay.propTypes = {
-    user: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        imageUrl: PropTypes.string,
-        name: PropTypes.string,
-        designation: PropTypes.string,
-        location: PropTypes.string,
-        phone: PropTypes.string,
-        tasks: PropTypes.arrayOf(PropTypes.number),
-        email: function(props,propName) {
-            if(typeof props[propName] != "string" || !props[propName].includes('@'))
-            {
-                return new Error("Invalid Email address");
-            }
-        }
-    }),
-    handleClose: PropTypes.func,
-    handleDelete: PropTypes.func,
-    handleSave: PropTypes.func,
-};
 
-function UserContainer({users}) 
+function UserContainer({users}: UserContainerProps) 
 {
     const dispatch = useDispatch();
 
-    const [overlay,setOverlay] = useState(null);
+    const [overlay,setOverlay] = useState<userObject | null>(null);
 
-    const editClick = useCallback((user) => setOverlay(user),[]);
+    const editClick = useCallback((user: userObject) => setOverlay(user),[]);
 
     function handleClose() {
         //for animation
-        let elem = document.querySelector('.userOverlay');
-        elem.classList.add('closeOverlay');
+        let elem: HTMLElement | null = document.querySelector('.userOverlay');
+        if(elem)
+        {
+            elem.classList.add('closeOverlay');
+        }
         setTimeout(() => setOverlay(null),500);
     }
 
-    function handleSave(newUser) {
+    function handleSave(newUser: userObject) {
         if(newUser.id == -1) {
             newUser.id = users[users.length-1].id+1;
             newUser.tasks = [];
@@ -384,12 +355,14 @@ function UserContainer({users})
             dispatch(actions.updateUser(newUser.id,newUser))
         }
         //for animation
-        let elem = document.querySelector('.userOverlay');
-        elem.classList.add('closeOverlay');
+        let elem: HTMLElement | null = document.querySelector('.userOverlay');
+        if(elem) {
+            elem.classList.add('closeOverlay');
+        }
         setTimeout(() => setOverlay(null),500);
     }
 
-    function handleDelete(id) {
+    function handleDelete(id : number) {
         dispatch(actions.removeUser(id));
         setOverlay(null);
     }
@@ -398,7 +371,12 @@ function UserContainer({users})
     return (
         <>
             <div id="flexContainer">
-                {users.map((user) => <UserCard user={user} editClick={editClick} key={user.id}/>)}
+                {
+                    users.map(function(user : userObject) {
+                        const props = {user,editClick,key:user.id};
+                        return <UserCard {...props} />
+                    })
+                }
             </div>
             <AddUserButton clickHandle={editClick}/>
             {modal}
@@ -406,10 +384,10 @@ function UserContainer({users})
     )
 }
 
-function Team(props) {
+function Team() {
     
     const [sort,setSort] = useState(1);
-    const users = useSelector(state => state.users);
+    const users = useSelector((state:stateType) => state.users);
     function sortChange() {
         if(sort == 1) {
             setSort(2);

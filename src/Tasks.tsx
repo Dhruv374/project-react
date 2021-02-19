@@ -3,11 +3,64 @@ import React from 'react';
 import { useMemo,useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useCallback, useState } from 'react/cjs/react.development';
+import { useCallback, useState } from 'react';
 import actions from './store/actions';
-import {PropTypes} from 'prop-types';
 import { useEffect } from 'react';
 import withSort from './withSort';
+import { type } from 'os';
+import {userObject} from './Team';
+
+//type definitions start here
+interface stageType {
+    [stageName: string] : boolean,
+}
+
+type statusNumbers = 0 | 1 | 2 | 3;
+
+export interface taskObject {
+    taskId : number,
+    imageUrl : string,
+    title : string,
+    assignee : number,
+    status : statusNumbers,
+    stages : stageType,
+    dueDate : string,
+}
+
+export class taskObject implements taskObject {}
+
+type tasksArray = taskObject[];
+
+interface userColumnTypes {
+    userTasks : tasksArray,
+    userName : string,
+    editClickHandle(task : taskObject) : void,
+    userId : number,
+}
+
+interface taskAssigneetypes {
+    users: userObject[],
+    assignee : string,
+    handleAssigneeChange(assignee : string) : void,
+}
+
+type statusType = "Not started" | "In-progress" | "On hold" | "Completed";
+
+interface taskOverlayTypes {
+    task: taskObject,
+    users : userObject[],
+    handleClose() : void,
+    handleSave(task : taskObject) : void,
+    handleDelete(taskId : number) : void,
+}
+
+interface stateType {
+    users : userObject[],
+    tasks : taskObject[],
+    cities : string[],
+}
+//type definitions end here
+
 
 let statusMapping = ["Not started" , "In-progress" , "On hold" , "Completed"];
 let monthMapping = ["Jan" , "Feb" , "Mar" , "Apr" , "May" , "Jun" , "Jul" , "Aug" , "Sep" , "Oct" , "Nov", "Dec"];
@@ -19,9 +72,9 @@ let mapStatus = {
     "Completed" : 3,
 }
 
-const UserTasksSort = withSort(UserTasks,'status');
+const UserTasksSort = withSort((UserTasks as unknown) as typeof React.Component ,'status');
 
-function getDateString(date) {
+function getDateString(date : string) {
     let dateString = " ";
     dateString+=date.slice(8,10);
     dateString+=" ";
@@ -31,7 +84,7 @@ function getDateString(date) {
     return dateString;
 }
 
-function getStageString(stages) {
+function getStageString(stages: stageType) {
     let totalStages = 0;
     let completedStages = 0;
     for(let prop in stages)
@@ -46,7 +99,7 @@ function getStageString(stages) {
     return stagesString;
 }
 
-function TaskInfo({task}) {
+function TaskInfo({task} : {task : taskObject}) {
     return(
         <div className="taskInfo">
             <span className="taskStatus">
@@ -63,18 +116,15 @@ function TaskInfo({task}) {
 }
 
 
-const TaskImage = React.memo(function({src}) {
+const TaskImage = React.memo(function({src} : {src : string}) {
     return (
         <div className="taskImage">
             <img src = {src} alt={src} height="160px" width="252px"/>
         </div>
     );
 })
-TaskImage.propTypes = {
-    src: PropTypes.string,
-}
 
-const TaskCard = React.memo(function({task,editClick}) {
+const TaskCard = React.memo(function({task,editClick} : {task : taskObject , editClick : (task : taskObject) => void}) {
 
     function editCallback() {
         editClick(task);
@@ -91,20 +141,8 @@ const TaskCard = React.memo(function({task,editClick}) {
         </div>
     )
 });
-TaskCard.propTypes = {
-    task: PropTypes.shape({
-        taskId: PropTypes.number.isRequired,
-        imageUrl: PropTypes.string,
-        title: PropTypes.string,
-        assignee: PropTypes.number.isRequired,
-        status: PropTypes.oneOf[0,1,2,3],
-        stages: PropTypes.objectOf(PropTypes.bool),
-        dueDate: PropTypes.string,
-    }),
-    editClick: PropTypes.func,
-}
 
-function UserTasks({userTasks,editClick}) {
+function UserTasks({userTasks,editClick} : {userTasks : tasksArray , editClick : (task : taskObject) => void}) {
     return(
         <>
             {userTasks.map(task => <TaskCard task={task} key={task.taskId} editClick={editClick}/>)}
@@ -112,7 +150,7 @@ function UserTasks({userTasks,editClick}) {
     )
 }
 
-function UserColumn({userTasks,userName,editClickHandle,userId}) {
+function UserColumn({userTasks,userName,editClickHandle,userId}: userColumnTypes) {
 
     const [sort,setSort] = useState(1);
     const editClick = useCallback((task) => editClickHandle(task),[]);
@@ -141,31 +179,33 @@ function UserColumn({userTasks,userName,editClickHandle,userId}) {
         </section>
     );
 }
-UserColumn.propTypes = {
-    userName: PropTypes.string,
-    userId: PropTypes.number.isRequired,
-    editClickHandle: PropTypes.func,
-}
 
-function StagesDisplay({stages,closeStage}) {
+function StagesDisplay({stages,closeStage} : {stages : stageType , closeStage : (stageName : string) => void}) {
     let stageArray = [];
     for(let stage in stages) {
         stageArray.push(stage);
     }
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
         if(e.target.value == "on")
         {
-            stages[e.target.dataset.stagename] = true;
+            if(typeof e.target.dataset.stagename == "string") {
+                stages[e.target.dataset.stagename] = true;
+            }
         }
         else
         {
-            stages[e.target.dataset.stagename] = false;
+            if(typeof e.target.dataset.stagename == "string") {
+                stages[e.target.dataset.stagename] = false;
+            }
         }
     }
 
-    function closeStageCallback(e) {
-        closeStage(e.target.dataset.stagename);
+    function closeStageCallback(e : React.MouseEvent<HTMLElement>) {
+        const target  = e.target as HTMLElement;
+        if(typeof target.dataset.stagename == "string") {
+            closeStage(target.dataset.stagename);
+        }
     }
 
     return (
@@ -178,17 +218,12 @@ function StagesDisplay({stages,closeStage}) {
         </ul>
     );
 }
-StagesDisplay.propTypes = {
-    stages: PropTypes.objectOf(PropTypes.bool),
-    closeStage: PropTypes.func,
-}
 
-
-function TaskImageurl({image,handleImageChange}) {
+function TaskImageurl({image,handleImageChange} : {image : string , handleImageChange : (url : string) => void}) {
 
     const [taskImage,setTaskImage] = useState(image);
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
         let uploadUrl = e.target.value;
         uploadUrl = uploadUrl.slice(12);
         uploadUrl = 'assets/' + uploadUrl;
@@ -205,16 +240,11 @@ function TaskImageurl({image,handleImageChange}) {
         </div> 
     )
 }
-TaskImageurl.propTypes = {
-    image: PropTypes.string,
-    handleImageChange: PropTypes.func,
-}
 
-
-function TaskTitle({title,handleTitleChange}) {
+function TaskTitle({title,handleTitleChange} : {title: string, handleTitleChange : (title : string) => void}) {
     const [taskTitle,setTaskTitle] = useState(title);
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
         setTaskTitle(e.target.value);
         handleTitleChange(e.target.value);
     }
@@ -226,16 +256,12 @@ function TaskTitle({title,handleTitleChange}) {
         </div>
     )
 }
-TaskTitle.propTypes = {
-    title: PropTypes.string,
-    handleTitleChange: PropTypes.func,
-}
 
-function TaskAssignee({users,assignee,handleAssigneeChange}) {
+function TaskAssignee({users,assignee,handleAssigneeChange} : taskAssigneetypes) {
 
     const [taskAssignee,setTaskAssignee] = useState(assignee);
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLSelectElement>) {
         setTaskAssignee(e.target.value);
         handleAssigneeChange(e.target.value);
     }
@@ -251,19 +277,14 @@ function TaskAssignee({users,assignee,handleAssigneeChange}) {
         </div>
     )
 }
-TaskAssignee.propTypes = {
-    assignee: PropTypes.string,
-    handleAssigneeChange: PropTypes.func,
-}
 
-
-function TaskStatus({status,handleStatusChange}) {
+function TaskStatus({status,handleStatusChange} : {status : statusType , handleStatusChange: (status : statusType) => void}) {
 
     const [taskStatus,setTaskStatus] = useState(status);
 
-    function handleChange(e) {
-        setTaskStatus(e.target.value);
-        handleStatusChange(e.target.value);
+    function handleChange(e : React.ChangeEvent<HTMLSelectElement>) {
+        setTaskStatus(e.target.value as statusType);
+        handleStatusChange(e.target.value as statusType);
     }
     return (
         <div className="taskStatusOverlay">
@@ -278,15 +299,11 @@ function TaskStatus({status,handleStatusChange}) {
         </div>
     );
 }
-TaskStatus.propTypes = {
-    status: PropTypes.oneOf(["Not started","In-progress","On hold","Completed"]),
-    handleStatusChange: PropTypes.func,
-}
 
-function TaskDate({date,handleDateChange}) {
+function TaskDate({date,handleDateChange} : {date: string , handleDateChange : (date : string) => void}) {
     const [taskDate,setTaskDate] = useState(date);
 
-    function handleChange(e) {
+    function handleChange(e : React.ChangeEvent<HTMLInputElement>) {
         setTaskDate(e.target.value);
         handleDateChange(e.target.value);
     }
@@ -298,13 +315,8 @@ function TaskDate({date,handleDateChange}) {
         </div>
     )
 }
-TaskDate.propTypes = {
-    date: PropTypes.string,
-    handleDateChange: PropTypes.func,
-}
 
-
-function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
+function TaskOverlay({task,users,handleClose,handleSave,handleDelete} : taskOverlayTypes) {
     
     let selectedIndex = useMemo(() => users.findIndex((user) => user.id == task.assignee),[task]);
 
@@ -320,34 +332,34 @@ function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
 
     let taskImage = task.imageUrl || "assets/default.png";
     
-    function handleImageChange(imageUrl) {
+    function handleImageChange(imageUrl: string) {
         taskImage = imageUrl;
     }
 
     let taskTitle = task.title || "";
-    function handleTitleChange(title) {
+    function handleTitleChange(title: string) {
         taskTitle = title;
     }
 
     let taskAssignee = users[selectedIndex].name;
-    function handleAssigneeChange(assignee) {
+    function handleAssigneeChange(assignee: string) {
         taskAssignee = assignee;
     }
 
-    let taskStatus = statusMapping[task.status];
-    function handleStatusChange(status) {
+    let taskStatus:statusType = statusMapping[task.status] as statusType;
+    function handleStatusChange(status: statusType) {
         taskStatus = status;
     }
 
     let taskDate = task.dueDate || "";
-    function handleDateChange(date) {
+    function handleDateChange(date: string) {
         taskDate = date;
     }
 
     const [taskStages,setTaskstages] = useState(task.stages);
 
-    function deleteStageHandle(stageName) {
-        let newStages = {};
+    function deleteStageHandle(stageName : string) {
+        let newStages: stageType = {};
         for(let stage in taskStages) {
             newStages[stage] = taskStages[stage];
         }
@@ -361,7 +373,7 @@ function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
         {
             return;
         }
-        let newStages = {};
+        let newStages: stageType = {};
         for(let stage in taskStages) {
             newStages[stage] = taskStages[stage];
         }
@@ -375,7 +387,7 @@ function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
 
     function saveCallBack() {
         let currentAssigneeIndex = users.findIndex((user) => user.name == taskAssignee);
-        let newTask = {};
+        let newTask: taskObject = new taskObject();
         if(isNaN(task.taskId)) {
             newTask.taskId = -1;
         }
@@ -385,7 +397,7 @@ function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
         newTask.imageUrl = taskImage;
         newTask.title = taskTitle;
         newTask.assignee = users[currentAssigneeIndex].id;
-        newTask.status = mapStatus[taskStatus];
+        newTask.status = mapStatus[taskStatus] as statusNumbers;
         newTask.stages = {};
         for(let stage in taskStages) {
             newTask.stages[stage] = taskStages[stage];
@@ -437,41 +449,28 @@ function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
             elem.current
     );
 }
-TaskOverlay.propTyps = {
-    task: PropTypes.shape({
-        taskId: PropTypes.number.isRequired,
-        imageUrl: PropTypes.string,
-        title: PropTypes.string,
-        assignee: PropTypes.number.isRequired,
-        status: PropTypes.oneOf[0,1,2,3],
-        stages: PropTypes.objectOf(PropTypes.bool),
-        dueDate: PropTypes.string,
-    }),
-    handleClose: PropTypes.func,
-    handleDelete: PropTypes.func,
-    handleSave: PropTypes.func,
-};
 
 function TasksContainer() {
 
-    const tasks = useSelector(state => state.tasks);
-    const users = useSelector(state => state.users);
+    const tasks = useSelector((state : stateType) => state.tasks);
+    const users = useSelector((state : stateType) => state.users);
     const dispatch = useDispatch();
 
-    const [overlay,setOverlay] = useState(null);
+    const [overlay,setOverlay] = useState<taskObject | null>(null);
 
-    function editClickHandle(task) {
+    function editClickHandle(task : taskObject) {
         setOverlay(task);
     }
 
     function handleClose() {
         // for animation
         let elem = document.querySelector('.tasksOverlay');
-        elem.classList.add('closeOverlay');
+        if(elem)
+            elem.classList.add('closeOverlay');
         setTimeout(() => setOverlay(null),500);
     }
 
-    function handleSave(newTask) {
+    function handleSave(newTask : taskObject) {
         if(newTask.taskId == -1) {
             newTask.taskId = tasks[tasks.length-1].taskId+1;
             dispatch(actions.addTask(newTask));
@@ -481,17 +480,18 @@ function TasksContainer() {
         }
         taskMap.set(newTask.taskId,newTask);
         let elem = document.querySelector('.tasksOverlay');
-        elem.classList.add('closeOverlay');
+        if(elem)
+            elem.classList.add('closeOverlay');
         setTimeout(() => setOverlay(null),500);
     }
     
-    function handleDelete(id) {
+    function handleDelete(id : number) {
         dispatch(actions.removeTask(id));
         setOverlay(null);
     }
 
     let taskMap = new Map();
-    tasks.forEach(element => {
+    tasks.forEach((element: taskObject) => {
         taskMap.set(element.taskId,element);
     });
 
@@ -500,8 +500,8 @@ function TasksContainer() {
     return (
         <>
             <div className="board-lists">
-                {users.map(function (user) {
-                    let userTasks = [];
+                {users.map(function (user : userObject) {
+                    let userTasks: taskObject[] = [];
                     user.tasks.forEach(id => userTasks.push(taskMap.get(id)));
                     return <UserColumn userTasks={userTasks} key={user.id} userName={user.name} editClickHandle={editClickHandle} userId={user.id}/>
                 })}
