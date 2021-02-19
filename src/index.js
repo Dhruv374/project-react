@@ -1,14 +1,19 @@
-import React from 'react';
+import React,{lazy} from 'react';
 import ReactDOM from 'react-dom';
 import './styles.css';
-import 'font-awesome/css/font-awesome.min.css'
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import rootReducer from './store/reducers.js';
+import('font-awesome/css/font-awesome.min.css');
+
+const store = createStore(rootReducer);
 
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,  
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
   document.querySelector(".base")
 );
 

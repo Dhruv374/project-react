@@ -1,38 +1,21 @@
 import React, {useEffect, useState} from 'react';
 import ReactDOM from 'react-dom';
-import { NavLink } from 'react-router-dom';
+import { NavLink,Link } from 'react-router-dom';
+import {PropTypes} from 'prop-types';
 
-function Navbutton({route,isActive}) {
-    
-    const handleClick = function () {
-        window.location.href = "/"+route;
-    }
+function Navbar() {
 
-    let className = "navButton " + route;
-    if(isActive) {
-        className += " active";
-    }
-    return (
-        <div className={className} onClick={handleClick}>{route.toUpperCase()}</div>
-    )
-}
+    let [task,setTask] = useState(true);
 
-function Navbar(props) {
-
-    let url = window.location.href.slice(-1);
-    let task = true;
-    if(url === "m") {
-        task = false;
-    }
     return (
         <div className="topnav">
-            <Navbutton route={`tasks`} isActive={task}/>
-            <Navbutton route={`team`} isActive={!task}/>
+            <Link to={'/tasks'} onClick={() => setTask(true)} className={task ? "active" : ""}>TASKS</Link>
+            <Link to={'/team'} onClick={() => setTask(false)} className={task ? "" : "active"}>TEAM</Link>
         </div>
     );
 }
 
-function Navigation(props) {
+function Navigation() {
     return (
         <header className="header">
             <Navbar />

@@ -1,8 +1,13 @@
 import { faUserInjured } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
-import { useMemo } from 'react';
+import { useMemo,useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useCallback, useState } from 'react/cjs/react.development';
+import actions from './store/actions';
+import {PropTypes} from 'prop-types';
+import { useEffect } from 'react';
+import withSort from './withSort';
 
 let statusMapping = ["Not started" , "In-progress" , "On hold" , "Completed"];
 let monthMapping = ["Jan" , "Feb" , "Mar" , "Apr" , "May" , "Jun" , "Jul" , "Aug" , "Sep" , "Oct" , "Nov", "Dec"];
@@ -14,6 +19,7 @@ let mapStatus = {
     "Completed" : 3,
 }
 
+const UserTasksSort = withSort(UserTasks,'status');
 
 function getDateString(date) {
     let dateString = " ";
@@ -56,13 +62,17 @@ function TaskInfo({task}) {
     );
 }
 
+
 const TaskImage = React.memo(function({src}) {
     return (
         <div className="taskImage">
-            <img src = {src} height="160px" width="252px"/>
+            <img src = {src} alt={src} height="160px" width="252px"/>
         </div>
     );
 })
+TaskImage.propTypes = {
+    src: PropTypes.string,
+}
 
 const TaskCard = React.memo(function({task,editClick}) {
 
@@ -81,23 +91,60 @@ const TaskCard = React.memo(function({task,editClick}) {
         </div>
     )
 });
+TaskCard.propTypes = {
+    task: PropTypes.shape({
+        taskId: PropTypes.number.isRequired,
+        imageUrl: PropTypes.string,
+        title: PropTypes.string,
+        assignee: PropTypes.number.isRequired,
+        status: PropTypes.oneOf[0,1,2,3],
+        stages: PropTypes.objectOf(PropTypes.bool),
+        dueDate: PropTypes.string,
+    }),
+    editClick: PropTypes.func,
+}
+
+function UserTasks({userTasks,editClick}) {
+    return(
+        <>
+            {userTasks.map(task => <TaskCard task={task} key={task.taskId} editClick={editClick}/>)}
+        </>
+    )
+}
 
 function UserColumn({userTasks,userName,editClickHandle,userId}) {
-    console.log(userTasks);
 
+    const [sort,setSort] = useState(1);
     const editClick = useCallback((task) => editClickHandle(task),[]);
-
+    
+    function handleSort() {
+        if(sort == 1) {
+            setSort(2);
+        }
+        else {
+            setSort(1);
+        }
+    }
+    
     return (
         <section className="board-list">
             <div className="tasksAdd" onClick={() => editClick({assignee: userId,imageUrl: "assets/default.png",status:0})}>
                 <i className="fa fa-plus-circle" aria-hidden="true"></i>
             </div>
+            <div className="tasksAdd taskSort" onClick={handleSort}>
+                <i className={"fa " + ((sort == 1) ? "fa-arrow-circle-up":"fa-arrow-circle-down")} aria-hidden="true"></i>
+            </div>
             <div className="list-title">
                 {userName}
             </div>
-            {userTasks.map(task => <TaskCard task={task} key={task.taskId} editClick={editClick}/>)}
+            <UserTasksSort userTasks={userTasks} editClick = {editClick} type={sort}/>
         </section>
     );
+}
+UserColumn.propTypes = {
+    userName: PropTypes.string,
+    userId: PropTypes.number.isRequired,
+    editClickHandle: PropTypes.func,
 }
 
 function StagesDisplay({stages,closeStage}) {
@@ -131,6 +178,11 @@ function StagesDisplay({stages,closeStage}) {
         </ul>
     );
 }
+StagesDisplay.propTypes = {
+    stages: PropTypes.objectOf(PropTypes.bool),
+    closeStage: PropTypes.func,
+}
+
 
 function TaskImageurl({image,handleImageChange}) {
 
@@ -147,12 +199,17 @@ function TaskImageurl({image,handleImageChange}) {
     return (
         <div className="taskImageOverlay">
             <label htmlFor="task-image-input">
-                <img src = {taskImage} height="160px" width="252px" />
+                <img src = {taskImage} alt={taskImage} height="160px" width="252px" />
             </label>
             <input onChange={handleChange} type="file" id="task-image-input" accept="image/*" style={{display:'none'}} />
         </div> 
     )
 }
+TaskImageurl.propTypes = {
+    image: PropTypes.string,
+    handleImageChange: PropTypes.func,
+}
+
 
 function TaskTitle({title,handleTitleChange}) {
     const [taskTitle,setTaskTitle] = useState(title);
@@ -168,6 +225,10 @@ function TaskTitle({title,handleTitleChange}) {
             <input value={taskTitle} onChange={handleChange} type="text" id="taskTitleInput" name="taskTitleInput" />  
         </div>
     )
+}
+TaskTitle.propTypes = {
+    title: PropTypes.string,
+    handleTitleChange: PropTypes.func,
 }
 
 function TaskAssignee({users,assignee,handleAssigneeChange}) {
@@ -190,6 +251,11 @@ function TaskAssignee({users,assignee,handleAssigneeChange}) {
         </div>
     )
 }
+TaskAssignee.propTypes = {
+    assignee: PropTypes.string,
+    handleAssigneeChange: PropTypes.func,
+}
+
 
 function TaskStatus({status,handleStatusChange}) {
 
@@ -211,7 +277,10 @@ function TaskStatus({status,handleStatusChange}) {
             </select>
         </div>
     );
-
+}
+TaskStatus.propTypes = {
+    status: PropTypes.oneOf(["Not started","In-progress","On hold","Completed"]),
+    handleStatusChange: PropTypes.func,
 }
 
 function TaskDate({date,handleDateChange}) {
@@ -229,13 +298,28 @@ function TaskDate({date,handleDateChange}) {
         </div>
     )
 }
+TaskDate.propTypes = {
+    date: PropTypes.string,
+    handleDateChange: PropTypes.func,
+}
 
 
 function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
-
-    let selectedIndex = useMemo(() => users.findIndex((user) => user.id == task.assignee),[task]);
     
+    let selectedIndex = useMemo(() => users.findIndex((user) => user.id == task.assignee),[task]);
+
+    const elem = useRef(document.createElement('div'));
+    useEffect(function() {
+        elem.current.classList.add('tasksOverlayContainer');
+        document.body.appendChild(elem.current);
+
+        return function() {
+            document.body.removeChild(elem.current);
+        }
+    },[]);
+
     let taskImage = task.imageUrl || "assets/default.png";
+    
     function handleImageChange(imageUrl) {
         taskImage = imageUrl;
     }
@@ -297,11 +381,6 @@ function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
         }
         else {
             newTask.taskId = task.taskId;
-            if(selectedIndex != currentAssigneeIndex) {
-                let taskIndex = users[selectedIndex].tasks.findIndex((taskId) => taskId == newTask.taskId);
-                users[selectedIndex].tasks.splice(taskIndex,1);
-                users[currentAssigneeIndex].tasks.push(newTask.taskId);
-            }
         }
         newTask.imageUrl = taskImage;
         newTask.title = taskTitle;
@@ -327,8 +406,7 @@ function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
     }
 
 
-    return (
-        <div className="tasksOverlayContainer">
+    return ReactDOM.createPortal (
             <div className="tasksOverlay">
                 <div className="closeButton" onClick={closeCallback}>
                 X
@@ -355,12 +433,30 @@ function TaskOverlay({task,users,handleClose,handleSave,handleDelete}) {
                     <i className="fa fa-times" aria-hidden="true"></i> DELETE CARD
                 </div>
                 </div>
-            </div>
-        </div>
+            </div>,
+            elem.current
     );
 }
+TaskOverlay.propTyps = {
+    task: PropTypes.shape({
+        taskId: PropTypes.number.isRequired,
+        imageUrl: PropTypes.string,
+        title: PropTypes.string,
+        assignee: PropTypes.number.isRequired,
+        status: PropTypes.oneOf[0,1,2,3],
+        stages: PropTypes.objectOf(PropTypes.bool),
+        dueDate: PropTypes.string,
+    }),
+    handleClose: PropTypes.func,
+    handleDelete: PropTypes.func,
+    handleSave: PropTypes.func,
+};
 
-function TasksContainer({tasks,users}) {
+function TasksContainer() {
+
+    const tasks = useSelector(state => state.tasks);
+    const users = useSelector(state => state.users);
+    const dispatch = useDispatch();
 
     const [overlay,setOverlay] = useState(null);
 
@@ -369,30 +465,28 @@ function TasksContainer({tasks,users}) {
     }
 
     function handleClose() {
-        setOverlay(null);
+        // for animation
+        let elem = document.querySelector('.tasksOverlay');
+        elem.classList.add('closeOverlay');
+        setTimeout(() => setOverlay(null),500);
     }
 
     function handleSave(newTask) {
         if(newTask.taskId == -1) {
             newTask.taskId = tasks[tasks.length-1].taskId+1;
-            (users.find((user) => user.id == newTask.assignee)).tasks.push(newTask.taskId);
-            tasks.push(newTask);
+            dispatch(actions.addTask(newTask));
         }
         else {
-            let ind = tasks.findIndex((task) => task.taskId == newTask.taskId);
-            tasks[ind] = newTask;
+            dispatch(actions.updateTask(newTask.taskId,newTask));
         }
         taskMap.set(newTask.taskId,newTask);
-        commitUsers(users);
-        commitTasks(tasks);
-        setOverlay(null);
+        let elem = document.querySelector('.tasksOverlay');
+        elem.classList.add('closeOverlay');
+        setTimeout(() => setOverlay(null),500);
     }
     
     function handleDelete(id) {
-        let ind = tasks.findIndex((task) => task.taskId == id);
-        tasks.splice(ind,1);
-        commitUsers(users);
-        commitTasks(tasks);
+        dispatch(actions.removeTask(id));
         setOverlay(null);
     }
 
@@ -401,96 +495,29 @@ function TasksContainer({tasks,users}) {
         taskMap.set(element.taskId,element);
     });
 
-    if(overlay == null) {
-        return(
-                <>
-                    <div className="board-lists">
-                        {users.map(function (user) {
-                            let userTasks = [];
-                            user.tasks.forEach(id => userTasks.push(taskMap.get(id)));
-                            return <UserColumn userTasks={userTasks} key={user.id} userName={user.name} editClickHandle={editClickHandle} userId={user.id}/>
-                        })}
-                    </div> 
-                </>
-            )
-    }
+    const modal = (overlay==null) ? null : <TaskOverlay task={overlay} users={users} handleClose={handleClose} handleSave={handleSave} handleDelete={handleDelete}/>;
 
-    else {
-        return(
-            <>
-                <div className="board-lists">
-                    {users.map(function (user) {
-                        let userTasks = [];
-                        user.tasks.forEach(id => userTasks.push(taskMap.get(id)));
-                        return <UserColumn userTasks={userTasks} key={user.id} userName={user.name} editClickHandle={editClickHandle}/>
-                    })}
-                </div> 
-                <TaskOverlay task={overlay} users={users} handleClose={handleClose} handleSave={handleSave} handleDelete={handleDelete}/>
-            </>
-        )
-    }
-}
-
-
-function Tasks(props) {
-    let users = fetchUsers();
-    let tasks = fetchTasks();
     return (
-        <section className="board">
-            <TasksContainer users={users} tasks={tasks} />
-        </section>
+        <>
+            <div className="board-lists">
+                {users.map(function (user) {
+                    let userTasks = [];
+                    user.tasks.forEach(id => userTasks.push(taskMap.get(id)));
+                    return <UserColumn userTasks={userTasks} key={user.id} userName={user.name} editClickHandle={editClickHandle} userId={user.id}/>
+                })}
+            </div>
+            {modal} 
+        </>
     )
 }
 
-function fetchTasks() {
-    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-    if(tasks.length == 0)
-    {
-        let newTask1 = {};
-        newTask1.taskId = 0;
-        newTask1.imageUrl = "assets/macd-first-page.jpeg";
-        newTask1.title = "Create welcome page of the restaurant";
-        newTask1.assignee = 0;
-        newTask1.status = 0;
-        newTask1.dueDate = "2020-12-25";
-        newTask1.stages = {
-            "Write HTML document" : false,
-            "Add styling to the page using CSS" : false,
-            "Add interaction using Javascript" : false,
-            "Deploy the page" : false,
-        };
-        tasks.push(newTask1);
 
-        let newTask2 = {};
-        newTask2.taskId = 1;
-        newTask2.imageUrl = "assets/default.png";
-        newTask2.title = "create customer care utility";
-        newTask2.assignee = 1;
-        newTask2.status = 0;
-        newTask2.dueDate = "2020-12-25";
-        newTask2.stages = {
-            "Build static layout" : false,
-            "Add UI in the page" : false,
-            "Create chatbot" : false,
-            "Design ML model for chatbot" : false,
-        };
-        tasks.push(newTask2);
-        commitTasks(tasks);
-    }
-    return tasks;
-}
-
-function commitTasks(tasks) {
-    localStorage.setItem('tasks',JSON.stringify(tasks));
-}
-
-function fetchUsers() {
-    let users = JSON.parse(localStorage.getItem('users'));
-    return users;
-}
-
-function commitUsers(users) {
-    localStorage.setItem('users',JSON.stringify(users));
+function Tasks() {
+    return (
+        <section className="board">
+            <TasksContainer />
+        </section>
+    )
 }
 
 export default Tasks;

@@ -33,6 +33,23 @@ html,body {
   z-index: 1;
 }
 
+@keyframes show {
+  from {
+    transform: scale(0) rotatey(0turn);
+  } to {
+    transform: scale(1) rotatey(1turn);
+  }
+}
+
+@keyframes hide {
+  from {
+    transform: scale(1) rotatey(0turn);
+  }
+  to {
+    transform: scale(0) rotatey(1turn);
+  }
+}
+
 .tasksOverlay, .userOverlay {
   background-color: rgb(235, 236, 240);
   margin-left: auto;
@@ -42,6 +59,11 @@ html,body {
   border-radius: 5px;
   padding-bottom: 20px;
   position: relative;
+  animation: show .5s;
+}
+
+.closeOverlay {
+  animation: hide .5s;
 }
 
 .userOverlay {
@@ -329,7 +351,6 @@ html,body {
     right: 100px;
     bottom: 70px;
     color: black;
-    /* color: rgb(0, 121, 191); */
     display: flex;
     justify-content: center;
     background-color: white;
@@ -347,7 +368,9 @@ html,body {
     font-size: 35px;
   }
 
-  
+  .sortButton {
+    bottom: 170px;
+  }
 
   .addUser {
     height: max-content;
@@ -413,7 +436,7 @@ html,body {
 
   .tasksAdd {
     position: absolute;
-    right: 20px;
+    right: 10px;
     top: 3px;
     padding: 5px;
     font-size: 20px;
@@ -423,6 +446,10 @@ html,body {
     cursor: pointer;
     background-color: #c5c8d3;
     border-radius: 5px;
+  }
+
+  .taskSort {
+    right: 35px;
   }
   
   .list-title {
@@ -487,43 +514,34 @@ html,body {
     top: 35px;
   }
 
-
-  
   .topnav a {
-    float: left;
+    /* float: left;
     color: #f2f2f2;
     text-align: center;
     padding: 14px 16px;
     text-decoration: none;
-    font-size: 20px;
-  }
-  
-  .topnav a:hover {
-    background-color: rgb(235, 236, 240);
-    color: black;
-  }
-  
-  .topnav a.active {
-    color: white;
-    background-color: rgb(0, 121, 191);
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-  }
-
-  .navButton {
+    font-size: 20px; */
     background-color:#63A1D3;
     margin-right: 10px;
     font-weight: bold;
     padding: 5px;
+    color: black;
+    text-decoration: none;
   }
-
-  .navButton:hover {
+  
+  .topnav a:hover {
+    /* background-color: rgb(235, 236, 240);
+    color: black; */
     border-radius: 5px;
     background-color:#9cc3e3;
     cursor: pointer;
   }
-
-  .topnav div.active {
+  
+  .topnav a.active {
+    /* color: white;
+    background-color: rgb(0, 121, 191);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px; */
     border-radius: 5px;
     background-color:#9cc3e3;
   }
