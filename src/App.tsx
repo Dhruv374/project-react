@@ -1,28 +1,14 @@
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import Navigation from './Navigation';
-import Tasks from './Tasks';
-import Team from './Team';
+import Navigation from './Components/Navigation/Navigation';
+import Tasks from './Components/Tasks/Tasks';
+import Team from './Components/Team/Team';
 import { Provider } from 'react-redux';
 import { createStore } from 'redux';
 import rootReducer from './store/reducers'
 import { useEffect } from 'react';
-import {userObject} from './Team';
-import {taskObject} from './Tasks';
+import {User , Task , State ,City} from './types';
 
-interface cityType {
-  "objectId": string,
-  "name": string,
-  "createdAt": string,
-  "updatedAt": string,
-}
-
-interface stateType {
-  users : userObject[],
-  tasks : taskObject[],
-  cities : string[],
-}
-
-const state: stateType = {
+const state: State = {
   users: JSON.parse(localStorage.getItem('users') as string),
   tasks: JSON.parse(localStorage.getItem('tasks') as string),
   cities: [],
@@ -30,7 +16,7 @@ const state: stateType = {
 
 const store = createStore(rootReducer,state);
 
-function App() {
+function App() : React.ReactElement {
 
     useEffect(function() {
       (async () => {
@@ -52,9 +38,9 @@ function App() {
               }
             }
           );
-              const data: {"results" : cityType[]} = await response.json();
-              const cityObjectsArray: cityType[] = data["results"];
-              state['cities'] = cityObjectsArray.map(function(city: cityType): string {
+              const data: {"results" : City[]} = await response.json();
+              const cityObjectsArray: City[] = data["results"];
+              state['cities'] = cityObjectsArray.map(function(city: City): string {
                 return city["name"];
               });
           }
@@ -79,10 +65,10 @@ function App() {
   );
 }
 
-store.subscribe(() => {
-  let state = store.getState();
-  let users = state.users;
-  let tasks = state.tasks;
+store.subscribe(() : void => {
+  const state = store.getState();
+  const users = state.users;
+  const tasks = state.tasks;
   localStorage.setItem('users',JSON.stringify(users));
   localStorage.setItem('tasks',JSON.stringify(tasks));
 })

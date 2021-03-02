@@ -1,37 +1,37 @@
-import {userObject} from '../Team'
-import {taskObject} from '../Tasks'
+import {User , Task , AddUserAction , AddTaskAction , RemoveUserAction , RemoveTaskAction , UpdateUserAction , UpdateTaskAction} from '../types'
+import actionTypes from './actionTypes';
 
-const addUser = (user : userObject) => {
+const addUser = (user : User) : AddUserAction => {
     return {
-        type: "ADD_USER",
+        type: actionTypes.ADD_USER,
         payload: user,
     }
 }
 
-const removeUser = (id : number) => {
+const removeUser = (id : number) : RemoveUserAction => {
     return {
-        type: "REMOVE_USER",
+        type: actionTypes.REMOVE_USER,
         payload: id,
     }
 }
 
-const addTask = (task : taskObject) => {
+const addTask = (task : Task) : AddTaskAction => {
     return {
-        type: "ADD_TASK",
+        type: actionTypes.ADD_TASK,
         payload: task,
     }   
 }
 
-const removeTask = (taskId : number) => {
+const removeTask = (taskId : number) : RemoveTaskAction => {
     return {
-        type: "REMOVE_TASK",
+        type: actionTypes.REMOVE_TASK,
         payload: taskId,
     }
 }
 
-const updateUser = (id : number,user : userObject) => {
+const updateUser = (id : number,user : User) : UpdateUserAction => {
     return {
-        type: "UPDATE_USER",
+        type: actionTypes.UPDATE_USER,
         payload: {
             id,
             user,
@@ -39,9 +39,9 @@ const updateUser = (id : number,user : userObject) => {
     }
 }
 
-const updateTask = (taskId : number,task : taskObject) => {
+const updateTask = (taskId : number,task : Task) : UpdateTaskAction => {
     return {
-        type: "UPDATE_TASK",
+        type: actionTypes.UPDATE_TASK,
         payload: {
             taskId,
             task,

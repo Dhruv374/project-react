@@ -641,3 +641,23 @@ html,body {
   .userLocation {
     margin-top: 25px;
   }
+
+  .taskImageOverlay img {
+    height: 160px;
+    width: 252px;
+  }
+
+  .taskImage img {
+    height: 160px;
+    width: 252px;
+  }
+
+  .userImageOverlay img {
+    height: 150px;
+    width: 150px;
+  }
+
+  .userImage img {
+    height: 100px;
+    width: 100px;
+  }

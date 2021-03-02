@@ -1,56 +1,13 @@
-import { SVGAttributes, useState } from "react";
-import { act } from "react-dom/test-utils";
-import Tasks from "../Tasks";
-import actions from "./actions";
-import {userObject} from '../Team'
-import {taskObject} from '../Tasks'
-import { stat } from "fs";
+import {Task , User , State , Action} from '../types';
+import actionTypes from './actionTypes';
 
 //type definitions start here
-interface stateType {
-    users : userObject[],
-    tasks : taskObject[],
-    cities : string[],
-}
 
-class stateType implements stateType {}
-
-type addUserAction = {
-    type : "ADD_USER",
-    payload : userObject,
-}
-
-type removeUserAction = {
-    type : "REMOVE_USER",
-    payload : number,
-}
-
-type addTaskAction = {
-    type : "ADD_TASK",
-    payload : taskObject,
-}
-
-type removeTaskAction = {
-    type : "REMOVE_TASK",
-    payload : number,
-} 
-
-type updateUserAction = {
-    type : "UPDATE_USER",
-    payload : {id : number , user : userObject}
-}
-
-type updateTaskAction = {
-    type : "UPDATE_TASK",
-    payload : {taskId : number , task : taskObject}
-}
-
-type actionType = addUserAction | removeUserAction | addTaskAction | removeTaskAction | updateUserAction | updateTaskAction;
 //type definitions end here
 
-const rootReducer = (state = new stateType(), action: actionType) : stateType => {
+const rootReducer = (state = new State(), action: Action) : State => {
     switch (action.type) {
-        case "ADD_USER" :
+        case actionTypes.ADD_USER :
             return (
                 {
                     ...state,
@@ -59,7 +16,7 @@ const rootReducer = (state = new stateType(), action: actionType) : stateType =>
                 }
             )
 
-        case "REMOVE_USER" :
+        case actionTypes.REMOVE_USER :
             console.log(action);
             return (
                 {
@@ -69,8 +26,8 @@ const rootReducer = (state = new stateType(), action: actionType) : stateType =>
                 }
             )
 
-        case "ADD_TASK" : {
-            let user = state.users.find(user => user.id == action.payload.assignee);
+        case actionTypes.ADD_TASK : {
+            const user = state.users.find(user => user.id == action.payload.assignee);
             if(typeof user != "undefined")
                 user.tasks.push(action.payload.taskId);
             return (
@@ -82,9 +39,9 @@ const rootReducer = (state = new stateType(), action: actionType) : stateType =>
             )
         }
 
-        case "REMOVE_TASK" : {
-            let task = state.tasks.find(task => task.taskId == action.payload) as taskObject;
-            let user = state.users.find(user => user.id == task.assignee);
+        case actionTypes.REMOVE_TASK : {
+            const task = state.tasks.find(task => task.taskId == action.payload) as Task;
+            const user = state.users.find(user => user.id == task.assignee);
             if(typeof user != "undefined")
             {
                 user.tasks = user.tasks.filter(taskId => taskId != action.payload);
@@ -98,8 +55,8 @@ const rootReducer = (state = new stateType(), action: actionType) : stateType =>
             )
         }
 
-        case "UPDATE_USER" : {
-            let ind = state.users.findIndex(user => user.id == action.payload.id)
+        case actionTypes.UPDATE_USER : {
+            const ind = state.users.findIndex(user => user.id == action.payload.id)
             return (
                 {
                     ...state,
@@ -109,8 +66,8 @@ const rootReducer = (state = new stateType(), action: actionType) : stateType =>
             )
         }
 
-        case "UPDATE_TASK" : {
-            let ind = state.tasks.findIndex(task => task.taskId == action.payload.taskId);
+        case actionTypes.UPDATE_TASK : {
+            const ind = state.tasks.findIndex(task => task.taskId == action.payload.taskId);
             if(state.tasks[ind].assignee == action.payload.task.assignee) {
                 return (
                     {
@@ -121,10 +78,10 @@ const rootReducer = (state = new stateType(), action: actionType) : stateType =>
                 )
             }
             else {
-                let user = state.users.find(user => user.id == state.tasks[ind].assignee);
+                const user = state.users.find(user => user.id == state.tasks[ind].assignee);
                 if(typeof user != "undefined")
                     user.tasks = user.tasks.filter(taskId => taskId != action.payload.taskId);
-                let newUser = state.users.find(user => user.id == action.payload.task.assignee);
+                const newUser = state.users.find(user => user.id == action.payload.task.assignee);
                 if(typeof newUser != "undefined")
                     newUser.tasks = [...newUser.tasks, action.payload.taskId];
                 console.log(state.users);
