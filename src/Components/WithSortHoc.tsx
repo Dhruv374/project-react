@@ -1,11 +1,18 @@
 import { faSort } from "@fortawesome/free-solid-svg-icons";
 import { useEffect } from "react"
+import React from "react";
+import { type } from "os";
 
-const withSort = function(Component,property) {
-    return function(props) {
+
+interface Props {
+    [property : string] : any,
+}
+
+const withSort = function(Component: typeof React.Component,property : string) : (props: Props) => JSX.Element {
+    return function(props : Props) {
         
-        let myProp = {};
-        function customSort(objA,objB) {
+        const myProp: Props = {} as Props;
+        function customSort(objA: Props , objB: Props) {
             if(objA[property] < objB[property]) {
                 return -1;
             } 

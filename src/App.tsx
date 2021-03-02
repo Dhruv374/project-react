@@ -1,21 +1,22 @@
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import Navigation from './Navigation';
-import Tasks from './Tasks';
-import Team from './Team';
+import Navigation from './Components/Navigation/Navigation';
+import Tasks from './Components/Tasks/Tasks';
+import Team from './Components/Team/Team';
 import { Provider } from 'react-redux';
 import { createStore } from 'redux';
-import rootReducer from './store/reducers.js'
+import rootReducer from './store/reducers'
 import { useEffect } from 'react';
+import {User , Task , State ,City} from './types';
 
-const state = {
-  users: JSON.parse(localStorage.getItem('users')),
-  tasks: JSON.parse(localStorage.getItem('tasks')),
-  cities: {},
+const state: State = {
+  users: JSON.parse(localStorage.getItem('users') as string),
+  tasks: JSON.parse(localStorage.getItem('tasks') as string),
+  cities: [],
 }
 
 const store = createStore(rootReducer,state);
 
-function App() {
+function App() : React.ReactElement {
 
     useEffect(function() {
       (async () => {
@@ -37,8 +38,11 @@ function App() {
               }
             }
           );
-              const data = await response.json();
-              state['cities'] = data["results"];
+              const data: {"results" : City[]} = await response.json();
+              const cityObjectsArray: City[] = data["results"];
+              state['cities'] = cityObjectsArray.map(function(city: City): string {
+                return city["name"];
+              });
           }
           catch(err) {
               state['cities'] = ["Mumbai" , "Delhi" , "Banglore" , "Chennai" , "Hyderabad" , "Ahmedabad"];
@@ -61,12 +65,10 @@ function App() {
   );
 }
 
-
-store.subscribe(() => console.log("Hello"));
-store.subscribe(() => {
-  let state = store.getState();
-  let users = state.users;
-  let tasks = state.tasks;
+store.subscribe(() : void => {
+  const state = store.getState();
+  const users = state.users;
+  const tasks = state.tasks;
   localStorage.setItem('users',JSON.stringify(users));
   localStorage.setItem('tasks',JSON.stringify(tasks));
 })
